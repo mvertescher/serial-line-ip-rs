@@ -1,0 +1,10 @@
+[package]
+name = "serial-line-ip"
+version = "0.1.0"
+authors = ["Matt Vertescher <mvertescher@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/mvertescher/serial-line-ip-rs"
+homepage = "https://github.com/mvertescher/serial-line-ip-rs"
+description = """
+Serial Line Internet Protocol (SLIP) API.
+"""
