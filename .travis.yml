@@ -1,0 +1,17 @@
+language: rust
+sudo: false
+matrix:
+  include:
+    - os: linux
+      rust: stable
+      env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      rust: nightly
+      env: TARGET=x86_64-unknown-linux-gnu
+env:
+  global:
+    - PROJECT_NAME: serial-line-ip
+    - RUST_BACKTRACE: full
+notifications:
+  email:
+    on_success: never
