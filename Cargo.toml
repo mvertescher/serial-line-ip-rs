@@ -5,6 +5,7 @@ authors = ["Matt Vertescher <mvertescher@gmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/mvertescher/serial-line-ip-rs"
 homepage = "https://github.com/mvertescher/serial-line-ip-rs"
+documentation = "https://docs.rs/serial-line-ip"
 description = """
 Serial Line Internet Protocol (SLIP) API.
 """
