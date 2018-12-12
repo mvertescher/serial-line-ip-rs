@@ -2,17 +2,20 @@
 //!
 //! See RFC 1055 for more information
 
-/// Slip special character definitions
-enum SlipChar {
-    End    = 0xC0,
-    Esc    = 0xDB,
-    EscEnd = 0xDC,
-    EscEsc = 0xDD,
-}
+/// Frame end
+const END: u8 = 0xC0;
+
+/// Frame escape
+const ESC: u8 = 0xDB;
+
+/// Transposed frame end
+const ESC_END: u8 = 0xDC;
+
+/// Transposed frame escape
+const ESC_ESC: u8 = 0xDD;
 
 /// Slip header definition
-static HEADER: &'static [u8] = &[SlipChar::End as u8, SlipChar::Esc as u8,
-    SlipChar::EscEnd as u8, SlipChar::EscEsc as u8];
+static HEADER: &'static [u8] = &[END, ESC, ESC_END, ESC_ESC];
 
 /// Fully slip encode the input buffer to the output buffer
 /// This will panic if the output buffer is less than 5 bytes
@@ -24,14 +27,14 @@ pub fn encode(input: &[u8], output: &mut [u8]) -> Result<usize, ()> {
     let mut offset = 4;
     for i in 0..input.len() {
         match input[i] {
-            0xDB => {
-                output[offset] = SlipChar::Esc as u8;
-                output[offset+1] = SlipChar::EscEsc as u8;
+            ESC => {
+                output[offset] = ESC;
+                output[offset+1] = ESC_ESC;
                 offset += 1;
             },
-            0xC0 => {
-                output[offset] = SlipChar::Esc as u8;
-                output[offset+1] = SlipChar::EscEnd as u8;
+            END => {
+                output[offset] = ESC;
+                output[offset+1] = ESC_END;
                 offset += 1;
             },
             _ => {
@@ -41,7 +44,7 @@ pub fn encode(input: &[u8], output: &mut [u8]) -> Result<usize, ()> {
         offset += 1;
     }
 
-    output[offset] = SlipChar::End as u8;
+    output[offset] = END;
     offset += 1;
 
     Ok(offset)
@@ -71,7 +74,7 @@ impl Slip {
             }
 
             if self.esc_seq.len() > 0 {
-                if self.esc_seq[0] == SlipChar::End as u8 {
+                if self.esc_seq[0] == END {
                     if input[i] == HEADER[self.esc_seq.len()] {
                         self.esc_seq.push(input[i]);
                         if self.esc_seq.len() == HEADER.len() {
@@ -85,25 +88,26 @@ impl Slip {
                     }
                 } else {
                     match input[i] {
-                        0xDC => {
-                            output[out_byte] = SlipChar::End as u8
+                        ESC_END => {
+                            output[out_byte] = END
                         },
-                        0xDD => {
-                            output[out_byte] = SlipChar::Esc as u8
+                        ESC_ESC => {
+                            output[out_byte] = ESC
                         },
                         _ => {
                             panic!("bad escape character");
                         },
                     }
+                    out_byte = out_byte + 1;
                     self.esc_seq.drain(..);
                 }
             } else {
                 match input[i] {
-                    0xDB => {
-                        self.esc_seq.push(SlipChar::Esc as u8);
+                    ESC => {
+                        self.esc_seq.push(ESC);
                     },
-                    0xC0 => {
-                        self.esc_seq.push(SlipChar::End as u8);
+                    END => {
+                        self.esc_seq.push(END);
                         in_byte = i + 1;
                         break;
                     },
@@ -176,5 +180,31 @@ mod tests {
             offset = offset + context.0;
         }
         assert_eq!(slipped.len(), offset);
+    }
+
+    /// Ensure that [ESC, ESC_END] -> [END]
+    #[test]
+    fn decode_esc_then_esc_end_sequence() {
+        const DATA: [u8; 3] = [0x01, 0xc0, 0x03];
+        const SLIPPED: [u8; 9] = [0xc0, 0xdb, 0xdc, 0xdd, 0x01, 0xdb, 0xdc, 0x03, 0xc0];
+        let mut output: [u8; 200] = [0; 200];
+
+        let mut slip = Slip::new();
+        let (bytes_decoded, data) = slip.decode_packet(&SLIPPED, &mut output).unwrap();
+        assert_eq!(SLIPPED.len(), bytes_decoded);
+        assert_eq!(&DATA, data);
+    }
+
+    /// Ensure that [ESC, ESC_ESC] -> [ESC]
+    #[test]
+    fn decode_esc_then_esc_esc_sequence() {
+        const DATA: [u8; 3] = [0x01, 0xdb, 0x03];
+        const SLIPPED: [u8; 9] = [0xc0, 0xdb, 0xdc, 0xdd, 0x01, 0xdb, 0xdd, 0x03, 0xc0];
+        let mut output: [u8; 200] = [0; 200];
+
+        let mut slip = Slip::new();
+        let (bytes_decoded, data) = slip.decode_packet(&SLIPPED, &mut output).unwrap();
+        assert_eq!(SLIPPED.len(), bytes_decoded);
+        assert_eq!(&DATA, data);
     }
 }
