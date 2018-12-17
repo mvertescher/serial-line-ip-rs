@@ -9,3 +9,4 @@ documentation = "https://docs.rs/serial-line-ip"
 description = """
 Serial Line Internet Protocol (SLIP) API.
 """
+readme = "README.md"
