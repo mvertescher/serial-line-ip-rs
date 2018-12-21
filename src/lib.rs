@@ -31,17 +31,17 @@
 //!
 //! let mut slip = Encoder::new();
 //!
-//! let mut bytes_written = slip.encode(INPUT_1, &mut output).unwrap();
+//! let mut totals = slip.encode(INPUT_1, &mut output).unwrap();
 //! let expected_bytes_written = 4 + INPUT_1.len();
-//! assert_eq!(expected_bytes_written, bytes_written);
+//! assert_eq!(expected_bytes_written, totals.1);
 //!
-//! bytes_written += slip.encode(INPUT_2, &mut output[bytes_written..]).unwrap();
+//! totals += slip.encode(INPUT_2, &mut output[totals.1..]).unwrap();
 //! let expected_bytes_written = expected_bytes_written + INPUT_2.len();
-//! assert_eq!(expected_bytes_written, bytes_written);
+//! assert_eq!(expected_bytes_written, totals.1);
 //!
-//! bytes_written += slip.finish(&mut output[bytes_written..]).unwrap();
-//! assert_eq!(expected_bytes_written + 1, bytes_written);
-//! assert_eq!(EXPECTED, &output[..bytes_written]);
+//! totals += slip.finish(&mut output[totals.1..]).unwrap();
+//! assert_eq!(expected_bytes_written + 1, totals.1);
+//! assert_eq!(EXPECTED, &output[..totals.1]);
 //! ```
 //!
 //! ### Decoding
