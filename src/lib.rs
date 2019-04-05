@@ -23,7 +23,7 @@
 //!
 //! const INPUT_1: &[u8] = &[0x01, 0x02, 0x03];
 //! const INPUT_2: &[u8] = &[0x04, 0x05, 0x06];
-//! const EXPECTED: &[u8] = &[0xc0, 0xdb, 0xdc, 0xdd,
+//! const EXPECTED: &[u8] = &[0xc0,
 //!     0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
 //!     0xc0
 //! ];
@@ -32,7 +32,7 @@
 //! let mut slip = Encoder::new();
 //!
 //! let mut totals = slip.encode(INPUT_1, &mut output).unwrap();
-//! let expected_bytes_written = 4 + INPUT_1.len();
+//! let expected_bytes_written = 1 + INPUT_1.len();
 //! assert_eq!(expected_bytes_written, totals.1);
 //!
 //! totals += slip.encode(INPUT_2, &mut output[totals.1..]).unwrap();
@@ -54,8 +54,8 @@
 //! ```
 //! use serial_line_ip::Decoder;
 //!
-//! const SLIP_ENCODED: [u8; 10] = [
-//!     0xc0, 0xdb, 0xdc, 0xdd,
+//! const SLIP_ENCODED: [u8; 7] = [
+//!     0xc0,
 //!     0x01, 0x02, 0x03, 0x04, 0x05,
 //!     0xc0
 //! ];
@@ -95,6 +95,3 @@ const ESC_END: u8 = 0xDC;
 
 /// Transposed frame escape
 const ESC_ESC: u8 = 0xDD;
-
-/// Slip header definition
-static HEADER: &'static [u8] = &[END, ESC, ESC_END, ESC_ESC];
