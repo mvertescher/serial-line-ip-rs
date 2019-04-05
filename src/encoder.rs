@@ -24,14 +24,12 @@ impl Encoder {
     pub fn encode(&mut self, input: &[u8], output: &mut [u8]) -> Result<EncodeTotals> {
         let mut out_byte = 0;
         if !self.header_written {
-            if output.len() < HEADER.len() {
+            if output.len() < 1 {
                 return Err(Error::NoOutputSpaceForHeader);
             }
 
-            for i in 0..HEADER.len() {
-                output[i] = HEADER[i];
-            }
-            out_byte = HEADER.len();
+            output[out_byte] = END;
+            out_byte = 1;
             self.header_written = true;
         }
 
@@ -91,45 +89,45 @@ mod tests {
 
     #[test]
     fn empty_encode() {
-        const EXPECTED: [u8; 5] = [0xc0, 0xdb, 0xdc, 0xdd, 0xc0];
+        const EXPECTED: [u8; 2] = [0xc0, 0xc0];
         let mut output: [u8; 32] = [0; 32];
 
         let mut slip = Encoder::new();
         let mut totals = slip.encode(&[0;0], &mut output).unwrap();
         assert_eq!(0, totals.0);
-        assert_eq!(4, totals.1);
+        assert_eq!(1, totals.1);
         totals += slip.finish(&mut output[totals.1..]).unwrap();
         assert_eq!(0, totals.0);
-        assert_eq!(5, totals.1);
+        assert_eq!(2, totals.1);
         assert_eq!(&EXPECTED, &output[..totals.1]);
     }
 
     #[test]
     fn encode_esc_esc_sequence() {
         const INPUT: [u8; 3] = [0x01, ESC, 0x03];
-        const EXPECTED: [u8; 9] = [0xc0, 0xdb, 0xdc, 0xdd, 0x01, ESC, ESC_ESC, 0x03, 0xc0];
+        const EXPECTED: [u8; 6] = [0xc0, 0x01, ESC, ESC_ESC, 0x03, 0xc0];
         let mut output: [u8; 32] = [0; 32];
 
         let mut slip = Encoder::new();
         let mut totals = slip.encode(&INPUT, &mut output).unwrap();
-        assert_eq!(5 + INPUT.len(), totals.1);
+        assert_eq!(2 + INPUT.len(), totals.1);
         totals += slip.finish(&mut output[totals.1..]).unwrap();
         assert_eq!(INPUT.len(), totals.0);
-        assert_eq!(6 + INPUT.len(), totals.1);
+        assert_eq!(3 + INPUT.len(), totals.1);
         assert_eq!(&EXPECTED, &output[..totals.1]);
     }
     #[test]
     fn encode_end_esc_sequence() {
         const INPUT: [u8; 3] = [0x01, END, 0x03];
-        const EXPECTED: [u8; 9] = [0xc0, 0xdb, 0xdc, 0xdd, 0x01, ESC, ESC_END, 0x03, 0xc0];
+        const EXPECTED: [u8; 6] = [0xc0, 0x01, ESC, ESC_END, 0x03, 0xc0];
         let mut output: [u8; 32] = [0; 32];
 
         let mut slip = Encoder::new();
         let mut totals = slip.encode(&INPUT, &mut output).unwrap();
-        assert_eq!(5 + INPUT.len(), totals.1);
+        assert_eq!(2 + INPUT.len(), totals.1);
         totals += slip.finish(&mut output[totals.1..]).unwrap();
         assert_eq!(INPUT.len(), totals.0);
-        assert_eq!(6 + INPUT.len(), totals.1);
+        assert_eq!(3 + INPUT.len(), totals.1);
         assert_eq!(&EXPECTED, &output[..totals.1]);
     }
 
@@ -139,7 +137,7 @@ mod tests {
         const INPUT_2: [u8; 4] = [0x05, END, 0x07, 0x08];
         const INPUT_3: [u8; 4] = [0x09, 0x0a, ESC, 0x0c];
         const EXPECTED: &[u8] = &[
-            0xc0, 0xdb, 0xdc, 0xdd, 0x01, 0x02, 0x03, ESC,
+            0xc0, 0x01, 0x02, 0x03, ESC,
             ESC_ESC, 0x05, ESC, ESC_END, 0x07, 0x08, 0x09, 0x0a,
             ESC, ESC_ESC, 0x0c, 0xc0
         ];
@@ -150,7 +148,7 @@ mod tests {
 
         let totals = slip.encode(&INPUT_1, &mut output).unwrap();
         assert_eq!(INPUT_1.len(), totals.0);
-        assert_eq!(4 + INPUT_1.len() + 1, totals.1);
+        assert_eq!(1 + INPUT_1.len() + 1, totals.1);
         final_totals += totals;
 
         let totals = slip.encode(&INPUT_2, &mut output[final_totals.1..]).unwrap();

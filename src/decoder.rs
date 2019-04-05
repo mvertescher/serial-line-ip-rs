@@ -36,19 +36,17 @@ impl Decoder {
 
     /// Either process the header successfully or return an error
     fn decode_header<'a>(&mut self, input: &'a [u8]) -> Result<&'a [u8]> {
-        if input.len() < HEADER.len() {
+        if input.len() < 1 {
             // TODO: decode partial headers! For now, just error out...
             return Err(Error::BadHeaderDecode);
         }
 
-        for i in 0..HEADER.len() {
-            if input[i] != HEADER[i] {
-                return Err(Error::BadHeaderDecode);
-            }
+        if input[0] != END {
+            return Err(Error::BadHeaderDecode);
         }
         self.header_found = true;
 
-        Ok(&input[HEADER.len()..])
+        Ok(&input[1..])
     }
 
     /// Core stream processing
@@ -116,7 +114,7 @@ mod tests {
 
     #[test]
     fn empty_decode() {
-        const INPUT: [u8; 5] = [0xc0, 0xdb, 0xdc, 0xdd, 0xc0];
+        const INPUT: [u8; 2] = [0xc0, 0xc0];
         let mut output: [u8; 32] = [0; 32];
 
         let mut slip = Decoder::new();
@@ -128,7 +126,7 @@ mod tests {
 
     #[test]
     fn simple_decode() {
-        const INPUT: [u8; 10] = [0xc0, 0xdb, 0xdc, 0xdd, 0x01, 0x02, 0x03, 0x04, 0x05, 0xc0];
+        const INPUT: [u8; 7] = [0xc0, 0x01, 0x02, 0x03, 0x04, 0x05, 0xc0];
         const DATA: [u8; 5] = [0x01, 0x02, 0x03, 0x04, 0x05];
         let mut output: [u8; 32] = [0; 32];
 
@@ -142,7 +140,7 @@ mod tests {
     /// Ensure that [ESC, ESC_END] -> [END]
     #[test]
     fn decode_esc_then_esc_end_sequence() {
-        const INPUT: [u8; 9] = [0xc0, 0xdb, 0xdc, 0xdd, 0x01, 0xdb, 0xdc, 0x03, 0xc0];
+        const INPUT: [u8; 6] = [0xc0, 0x01, 0xdb, 0xdc, 0x03, 0xc0];
         const DATA: [u8; 3] = [0x01, 0xc0, 0x03];
         let mut output: [u8; 200] = [0; 200];
 
@@ -156,7 +154,7 @@ mod tests {
     /// Ensure that [ESC, ESC_ESC] -> [ESC]
     #[test]
     fn decode_esc_then_esc_esc_sequence() {
-        const INPUT: [u8; 9] = [0xc0, 0xdb, 0xdc, 0xdd, 0x01, 0xdb, 0xdd, 0x03, 0xc0];
+        const INPUT: [u8; 6] = [0xc0, 0x01, 0xdb, 0xdd, 0x03, 0xc0];
         const DATA: [u8; 3] = [0x01, 0xdb, 0x03];
         let mut output: [u8; 200] = [0; 200];
 
@@ -169,7 +167,7 @@ mod tests {
 
     #[test]
     fn multi_part_decode() {
-        const INPUT_1: [u8; 9] = [0xc0, 0xdb, 0xdc, 0xdd, 0x01, 0x02, 0x03, 0x04, 0x05];
+        const INPUT_1: [u8; 6] = [0xc0, 0x01, 0x02, 0x03, 0x04, 0x05];
         const INPUT_2: [u8; 6] = [0x05, 0x06, 0x07, 0x08, 0x09, 0xc0];
         const DATA_1: [u8; 5] = [0x01, 0x02, 0x03, 0x04, 0x05];
         const DATA_2: [u8; 5] = [0x05, 0x06, 0x07, 0x08, 0x09];
