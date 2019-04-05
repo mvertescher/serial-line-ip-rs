@@ -1,13 +1,11 @@
 [package]
-name = "serial-line-ip"
-version = "0.3.0"
 authors = ["Matt Vertescher <mvertescher@gmail.com>"]
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/mvertescher/serial-line-ip-rs"
-homepage = "https://github.com/mvertescher/serial-line-ip-rs"
-documentation = "https://docs.rs/serial-line-ip"
-description = """
-Serial Line Internet Protocol (SLIP) API.
-"""
-readme = "README.md"
 categories = ["no-std"]
+description = "Serial Line Internet Protocol (SLIP) API."
+documentation = "https://docs.rs/serial-line-ip"
+homepage = "https://github.com/mvertescher/serial-line-ip-rs"
+license = "MIT OR Apache-2.0"
+name = "serial-line-ip"
+readme = "README.md"
+repository = "https://github.com/mvertescher/serial-line-ip-rs"
+version = "0.3.0"
