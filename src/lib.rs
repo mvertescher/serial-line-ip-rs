@@ -80,9 +80,9 @@ mod decoder;
 mod encoder;
 mod error;
 
-pub use error::{Error, Result};
 pub use decoder::Decoder;
-pub use encoder::Encoder;
+pub use encoder::{EncodeTotals, Encoder};
+pub use error::{Error, Result};
 
 /// Frame end
 const END: u8 = 0xC0;
