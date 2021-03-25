@@ -9,7 +9,12 @@ pub struct Encoder {
 
 /// The return type of `encode` that holds the bytes read and byte written after
 /// the encode operation.
-pub struct EncodeTotals(pub usize, pub usize);
+pub struct EncodeTotals {
+    /// Number of bytes that were read from the input buffer.
+    pub read: usize,
+    /// Number of bytes that were written to the output buffer.
+    pub written: usize,
+}
 
 impl Encoder {
     /// Create a new context for SLIP encoding
@@ -63,7 +68,10 @@ impl Encoder {
             in_byte += 1;
         }
 
-        Ok(EncodeTotals(in_byte, out_byte))
+        Ok(EncodeTotals {
+            read: in_byte,
+            written: out_byte,
+        })
     }
 
     /// Finish encoding the current packet and return the number of output bytes written.
@@ -73,13 +81,19 @@ impl Encoder {
         }
         output[0] = END;
 
-        Ok(EncodeTotals(0, 1))
+        Ok(EncodeTotals {
+            read: 0,
+            written: 1,
+        })
     }
 }
 
 impl core::ops::AddAssign for EncodeTotals {
     fn add_assign(&mut self, other: EncodeTotals) {
-        *self = EncodeTotals(self.0 + other.0, self.1 + other.1);
+        *self = EncodeTotals {
+            read: self.read + other.read,
+            written: self.written + other.written,
+        };
     }
 }
 
@@ -93,13 +107,13 @@ mod tests {
         let mut output: [u8; 32] = [0; 32];
 
         let mut slip = Encoder::new();
-        let mut totals = slip.encode(&[0;0], &mut output).unwrap();
-        assert_eq!(0, totals.0);
-        assert_eq!(1, totals.1);
-        totals += slip.finish(&mut output[totals.1..]).unwrap();
-        assert_eq!(0, totals.0);
-        assert_eq!(2, totals.1);
-        assert_eq!(&EXPECTED, &output[..totals.1]);
+        let mut totals = slip.encode(&[0; 0], &mut output).unwrap();
+        assert_eq!(0, totals.read);
+        assert_eq!(1, totals.written);
+        totals += slip.finish(&mut output[totals.written..]).unwrap();
+        assert_eq!(0, totals.read);
+        assert_eq!(2, totals.written);
+        assert_eq!(&EXPECTED, &output[..totals.written]);
     }
 
     #[test]
@@ -110,11 +124,11 @@ mod tests {
 
         let mut slip = Encoder::new();
         let mut totals = slip.encode(&INPUT, &mut output).unwrap();
-        assert_eq!(2 + INPUT.len(), totals.1);
-        totals += slip.finish(&mut output[totals.1..]).unwrap();
-        assert_eq!(INPUT.len(), totals.0);
-        assert_eq!(3 + INPUT.len(), totals.1);
-        assert_eq!(&EXPECTED, &output[..totals.1]);
+        assert_eq!(2 + INPUT.len(), totals.written);
+        totals += slip.finish(&mut output[totals.written..]).unwrap();
+        assert_eq!(INPUT.len(), totals.read);
+        assert_eq!(3 + INPUT.len(), totals.written);
+        assert_eq!(&EXPECTED, &output[..totals.written]);
     }
     #[test]
     fn encode_end_esc_sequence() {
@@ -124,11 +138,11 @@ mod tests {
 
         let mut slip = Encoder::new();
         let mut totals = slip.encode(&INPUT, &mut output).unwrap();
-        assert_eq!(2 + INPUT.len(), totals.1);
-        totals += slip.finish(&mut output[totals.1..]).unwrap();
-        assert_eq!(INPUT.len(), totals.0);
-        assert_eq!(3 + INPUT.len(), totals.1);
-        assert_eq!(&EXPECTED, &output[..totals.1]);
+        assert_eq!(2 + INPUT.len(), totals.written);
+        totals += slip.finish(&mut output[totals.written..]).unwrap();
+        assert_eq!(INPUT.len(), totals.read);
+        assert_eq!(3 + INPUT.len(), totals.written);
+        assert_eq!(&EXPECTED, &output[..totals.written]);
     }
 
     #[test]
@@ -137,35 +151,41 @@ mod tests {
         const INPUT_2: [u8; 4] = [0x05, END, 0x07, 0x08];
         const INPUT_3: [u8; 4] = [0x09, 0x0a, ESC, 0x0c];
         const EXPECTED: &[u8] = &[
-            0xc0, 0x01, 0x02, 0x03, ESC,
-            ESC_ESC, 0x05, ESC, ESC_END, 0x07, 0x08, 0x09, 0x0a,
-            ESC, ESC_ESC, 0x0c, 0xc0
+            0xc0, 0x01, 0x02, 0x03, ESC, ESC_ESC, 0x05, ESC, ESC_END, 0x07, 0x08, 0x09, 0x0a, ESC,
+            ESC_ESC, 0x0c, 0xc0,
         ];
         let mut output: [u8; 32] = [0; 32];
 
         let mut slip = Encoder::new();
-        let mut final_totals = EncodeTotals(0, 0);
+        let mut final_totals = EncodeTotals {
+            read: 0,
+            written: 0,
+        };
 
         let totals = slip.encode(&INPUT_1, &mut output).unwrap();
-        assert_eq!(INPUT_1.len(), totals.0);
-        assert_eq!(1 + INPUT_1.len() + 1, totals.1);
+        assert_eq!(INPUT_1.len(), totals.read);
+        assert_eq!(1 + INPUT_1.len() + 1, totals.written);
         final_totals += totals;
 
-        let totals = slip.encode(&INPUT_2, &mut output[final_totals.1..]).unwrap();
-        assert_eq!(INPUT_2.len(), totals.0);
-        assert_eq!(INPUT_2.len() + 1, totals.1);
+        let totals = slip
+            .encode(&INPUT_2, &mut output[final_totals.written..])
+            .unwrap();
+        assert_eq!(INPUT_2.len(), totals.read);
+        assert_eq!(INPUT_2.len() + 1, totals.written);
         final_totals += totals;
 
-        let totals = slip.encode(&INPUT_3, &mut output[final_totals.1..]).unwrap();
-        assert_eq!(INPUT_3.len(), totals.0);
-        assert_eq!(INPUT_3.len() + 1, totals.1);
+        let totals = slip
+            .encode(&INPUT_3, &mut output[final_totals.written..])
+            .unwrap();
+        assert_eq!(INPUT_3.len(), totals.read);
+        assert_eq!(INPUT_3.len() + 1, totals.written);
         final_totals += totals;
 
-        let totals = slip.finish(&mut output[final_totals.1..]).unwrap();
-        assert_eq!(0, totals.0);
-        assert_eq!(1, totals.1);
+        let totals = slip.finish(&mut output[final_totals.written..]).unwrap();
+        assert_eq!(0, totals.read);
+        assert_eq!(1, totals.written);
         final_totals += totals;
 
-        assert_eq!(EXPECTED, &output[..final_totals.1]);
+        assert_eq!(EXPECTED, &output[..final_totals.written]);
     }
 }
