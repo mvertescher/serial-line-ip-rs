@@ -33,15 +33,15 @@
 //!
 //! let mut totals = slip.encode(INPUT_1, &mut output).unwrap();
 //! let expected_bytes_written = 1 + INPUT_1.len();
-//! assert_eq!(expected_bytes_written, totals.1);
+//! assert_eq!(expected_bytes_written, totals.written);
 //!
-//! totals += slip.encode(INPUT_2, &mut output[totals.1..]).unwrap();
+//! totals += slip.encode(INPUT_2, &mut output[totals.written..]).unwrap();
 //! let expected_bytes_written = expected_bytes_written + INPUT_2.len();
-//! assert_eq!(expected_bytes_written, totals.1);
+//! assert_eq!(expected_bytes_written, totals.written);
 //!
-//! totals += slip.finish(&mut output[totals.1..]).unwrap();
-//! assert_eq!(expected_bytes_written + 1, totals.1);
-//! assert_eq!(EXPECTED, &output[..totals.1]);
+//! totals += slip.finish(&mut output[totals.written..]).unwrap();
+//! assert_eq!(expected_bytes_written + 1, totals.written);
+//! assert_eq!(EXPECTED, &output[..totals.written]);
 //! ```
 //!
 //! ### Decoding
